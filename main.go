@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -19,6 +20,7 @@ var (
 	domain   string
 	wordlist string
 	resolver string
+	output   string
 	verbose  bool
 )
 
@@ -26,6 +28,7 @@ func init() {
 	flag.StringVar(&domain, "d", "", "domain to enumerate")
 	flag.StringVar(&wordlist, "w", "", "wordlist for bruteforce")
 	flag.StringVar(&resolver, "r", "", "resolver to query")
+	flag.StringVar(&output, "o", "", "output directory, defaults to no output")
 	flag.BoolVar(&verbose, "v", false, "verbose output")
 	flag.Parse()
 }
@@ -35,24 +38,59 @@ func main() {
 		log.Println("check flags and rerun")
 		os.Exit(0)
 	}
-	f, err := os.Open(wordlist)
+	wf, err := os.Open(wordlist)
 	if err != nil {
 		log.Println(err)
 	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
+	defer wf.Close()
+
+	var outfileHandle *os.File = nil
+
+	if output != "" {
+		outfile := fmt.Sprintf("%s/%s.%d.log", output, domain, time.Now().UnixNano())
+		outfileHandle, err = os.Create(outfile)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
+	scanner := bufio.NewScanner(wf)
 	for scanner.Scan() {
 		if verbose {
 			scandom := fmt.Sprintf("%s.%s", scanner.Text(), domain)
+			ret := NameToIPs(scandom)
 			fmt.Println(scandom)
-			fmt.Println(NameToIPs(scandom))
+			fmt.Println(ret)
+			if outfileHandle != nil {
+				outfileHandle.WriteString(scandom + "|")
+				for x := range ret {
+					outfileHandle.WriteString(ret[x].String())
+					if x != len(ret)-1 {
+						outfileHandle.WriteString(",")
+					}
+				}
+				outfileHandle.WriteString("\n")
+			}
 		} else {
 			scandom := fmt.Sprintf("%s.%s", scanner.Text(), domain)
 			ret := NameToIPs(scandom)
 			if len(ret) > 0 {
 				fmt.Printf("%s %s\n", scandom, ret)
+				if outfileHandle != nil {
+					outfileHandle.WriteString(scandom + "|")
+					for x := range ret {
+						outfileHandle.WriteString(ret[x].String())
+						if x != len(ret)-1 {
+							outfileHandle.WriteString(",")
+						}
+					}
+					outfileHandle.WriteString("\n")
+				}
 			}
 		}
+	}
+	if outfileHandle != nil {
+		outfileHandle.Close()
 	}
 }
 
