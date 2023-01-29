@@ -21,11 +21,13 @@ var (
 	wordlist string
 	resolver string
 	output   string
+	timeout  int
 	verbose  bool
 )
 
 func init() {
 	flag.StringVar(&domain, "d", "", "domain to enumerate")
+	flag.IntVar(&timeout, "t", 1, "request timeout")
 	flag.StringVar(&wordlist, "w", "", "wordlist for bruteforce")
 	flag.StringVar(&resolver, "r", "", "resolver to query")
 	flag.StringVar(&output, "o", "", "output directory, defaults to no output")
@@ -108,7 +110,7 @@ func NameToIPs(name string) (ips []net.IP) {
 	base64.RawURLEncoding.Encode(b64msg, pmsg)
 
 	tr := http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	c := http.Client{Transport: &tr}
+	c := http.Client{Transport: &tr, Timeout: time.Second * time.Duration(timeout)}
 
 	qstr := fmt.Sprintf("https://%s/dns-query?dns=%s", resolver, b64msg)
 	req, err := http.NewRequest("GET", qstr, nil)
