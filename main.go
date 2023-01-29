@@ -122,6 +122,7 @@ func NameToIPs(name string) (ips []net.IP) {
 	if err != nil {
 		log.Println(err)
 	}
+	defer resp.Body.Close()
 	rcon, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
