@@ -159,6 +159,8 @@ func NameToIPs(name string) (ips []net.IP) {
 				panic(err)
 			}
 			gotIPs = append(gotIPs, r.AAAA[:])
+		default:
+			p.SkipAnswer()
 		}
 	}
 	return gotIPs
