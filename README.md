@@ -12,3 +12,9 @@ flags:
     o - output directory
     
     v - verbose messages
+
+    to - timeout(seconds)
+
+    t - threads
+
+
